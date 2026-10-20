@@ -2,3 +2,4 @@ demo-data/
 node_modules/
 *.tokenlens.bak
 .DS_Store
+__pycache__/
