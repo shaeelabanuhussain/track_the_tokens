@@ -1,0 +1,13 @@
+{
+  "name": "tokenlens",
+  "displayName": "TokenLens",
+  "version": "1.0.0",
+  "description": "Observe, diagnose and optimize Claude Code token spend: live cost statusline, per-session reports, dollar-attributed cost leaks, automatic PDF-to-Markdown, peak-hour timing tips, handoffs, budgets, HTML dashboard and FinOps FOCUS export. Zero dependencies, zero tokens added to your context.",
+  "author": {
+    "name": "BISTEC Global",
+    "url": "https://bistecglobal.com"
+  },
+  "repository": "https://github.com/shaeelabanuhussain/track_the_tokens",
+  "license": "MIT",
+  "keywords": ["tokens", "cost", "finops", "focus", "observability", "statusline", "pdf", "claude-code"]
+}

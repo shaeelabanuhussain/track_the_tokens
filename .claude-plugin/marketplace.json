@@ -1,0 +1,16 @@
+{
+  "name": "bistec-tokenlens",
+  "description": "BISTEC Global's Claude Code token observability and cost optimization plugin",
+  "owner": {
+    "name": "BISTEC Global",
+    "url": "https://bistecglobal.com"
+  },
+  "plugins": [
+    {
+      "name": "tokenlens",
+      "source": "./",
+      "description": "Track session tokens and cost, find cost leaks, convert PDFs to Markdown, get timing and best-practice tips.",
+      "category": "productivity"
+    }
+  ]
+}
