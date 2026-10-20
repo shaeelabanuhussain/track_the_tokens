@@ -483,6 +483,55 @@ function cmdWhatif() {
   );
 }
 
+function teamDir() {
+  const d = flag('dir');
+  if (d && d !== true) return path.resolve(d);
+  const cfg = loadConfig();
+  return cfg.teamDir ? path.resolve(cfg.teamDir.replace(/^~/, require('os').homedir())) : null;
+}
+
+function cmdShare() {
+  const days = Number(flag('days', 30));
+  const dir = teamDir();
+  if (!dir) {
+    console.log('Where should the summary go? Pass --dir <shared folder> or set "teamDir" in ~/.claude/tokenlens/config.json (a network share, OneDrive/SharePoint-synced folder or a git repo).');
+    process.exitCode = 1;
+    return;
+  }
+  const { file, data } = require('./lib/team').writeShare(loadSessions({ days }), { days, dir });
+  const spend = data.sessions.reduce((a, s) => a + s.cost, 0);
+  console.log(`✓ Shared ${data.sessions.length} session summaries (${usd(spend)}, last ${days} days) as ${data.developer.name} → ${file}`);
+  console.log(`  Shared: purpose category, cost, tokens, efficiency. Not shared: prompt text${loadConfig().shareTaskTitles ? ' (except task titles: shareTaskTitles is on)' : ''}, code, file contents.`);
+}
+
+function cmdTeam() {
+  const days = Number(flag('days', 30));
+  const dir = teamDir();
+  const team = require('./lib/team');
+  const shares = dir ? team.readShares(dir) : [];
+  if (!shares.length) {
+    console.log(`No shared summaries found${dir ? ' in ' + dir : ''}. Ask each developer to run /tokenlens:share with the same --dir (or teamDir).`);
+    process.exitCode = 1;
+    return;
+  }
+  const pol = team.policy();
+  const rows = shares.map((s) => team.assess(s, { days }, pol));
+  if (flag('json')) return console.log(JSON.stringify(rows, null, 2));
+  if (flag('html')) {
+    const outFile = flag('html') === true ? path.join(dataDir(), 'team.html') : path.resolve(flag('html'));
+    fs.writeFileSync(outFile, require('./lib/teamDashboard').renderTeam(rows, { days, policy: pol }));
+    console.log(`✓ Team report written: ${outFile}`);
+    if (flag('open')) {
+      const opener = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
+      try {
+        require('child_process').spawn(opener, [outFile], { detached: true, stdio: 'ignore', shell: process.platform === 'win32' }).unref();
+      } catch {}
+    }
+    return;
+  }
+  console.log(team.teamMarkdown(rows, { days }));
+}
+
 function cmdHelp() {
   console.log(`TokenLens: observe, diagnose and optimize Claude Code token spend.
 
@@ -494,6 +543,8 @@ function cmdHelp() {
   export --format focus|otel|json  FinOps export (FOCUS 1.x CSV, OTel GenAI JSON)
   pdf2md <file.pdf>                Convert a PDF to Markdown and show token savings
   tips | timing                    Best practices | peak / off-peak advice
+  share --dir <folder>             Share your privacy-safe usage summary with your team
+  team --dir <folder> [--html]     Team report: who spends what, on what, who needs more tokens
   budget <session$> [day$]         Set budgets used by warnings
   setup [--project] [--uninstall]  Enable the TokenLens statusline
   statusline | hook <event>        Used by Claude Code`);
@@ -513,6 +564,8 @@ const commands = {
   setup: cmdSetup,
   budget: cmdBudget,
   whatif: cmdWhatif,
+  share: cmdShare,
+  team: cmdTeam,
   help: cmdHelp,
 };
 

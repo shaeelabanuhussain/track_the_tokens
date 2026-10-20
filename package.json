@@ -8,6 +8,7 @@
   "engines": { "node": ">=18" },
   "scripts": {
     "test": "node --test tests/*.test.js",
+    "demo:team": "node scripts/demo/team.js demo-data/team-demo && node scripts/tokenlens.js team --dir demo-data/team-demo/team --html --open",
     "demo": "node scripts/demo/generate.js demo-data && CLAUDE_CONFIG_DIR=demo-data node scripts/tokenlens.js dashboard --days 14 --open"
   }
 }

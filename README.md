@@ -45,6 +45,8 @@ Try it without installing: `npm run demo` builds two weeks of realistic demo dat
 | `/tokenlens:tips` | Best practices plus peak/off-peak advice for your timezone |
 | `/tokenlens:whatif` | Estimated savings if leaks, model routing and caching were fixed |
 | `/tokenlens:export` | FinOps FOCUS 1.x CSV, OpenTelemetry GenAI JSON or raw JSON |
+| `/tokenlens:share` | Shares your privacy-safe usage summary to the team folder |
+| `/tokenlens:team` | Team report: who used tokens, for what, how efficiently, and who is eligible for more |
 | `/tokenlens:budget 5 25` | Per-session and per-day budgets ($) that drive warnings |
 | `/tokenlens:setup` | Enables the statusline |
 
@@ -75,6 +77,31 @@ Every report command runs a local script and hands Claude the finished text, so 
 | Subagent-heavy sessions | Share that could run on Haiku/Sonnet |
 
 Costs come from the real `usage` blocks in Claude Code's transcripts (`~/.claude/projects/**/*.jsonl`, including subagents). Streamed duplicates are de-duplicated by `message.id`, and 5-minute and 1-hour cache writes are priced separately with each model's own cache-read rate. Prices are current list prices ([pricing.js](scripts/lib/pricing.js)) and can be overridden in `~/.claude/tokenlens/pricing.json`. Leak dollar figures are **estimates**, labelled as such everywhere.
+
+## Team view: who uses tokens, for what, and who needs more
+
+Each developer runs `/tokenlens:share` (or sets `"teamDir"` once and shares weekly). It writes one small JSON summary per person into a shared folder: a network share, a OneDrive/SharePoint-synced folder or a git repo. A team lead then runs `/tokenlens:team --html --open` ([sample](docs/demo-team-report.html)).
+
+For each person the report shows spend and projected monthly spend against their allowance, **what the tokens were spent on** (feature development, bug fixing, testing & QA, code review, refactoring, docs & analysis, DevOps, learning & exploration, general Q&A), the efficiency score, avoidable spend, plan-limit stops, and a verdict:
+
+| Verdict | Rule (configurable) | Action |
+|---|---|---|
+| ✅ Eligible for more tokens | Heavy use (≥80% of allowance or ≥3 plan-limit stops) **and** efficient (score ≥65, ≤30% avoidable) **and** ≥60% of spend on delivery work | Raise the allowance to the suggested amount |
+| 🟡 Coach first | Heavy and delivery-focused, but wasteful | Fix the named top leak; it frees allowance before buying more |
+| 🔍 Review purpose | Heavy, but mostly learning or general Q&A | Talk about it; it may still be justified |
+| ⚪ Within allowance | Not heavy | Nothing, plus a coaching hint if efficiency is low |
+
+**Privacy:** summaries contain purpose categories and numbers only: no prompt text, code or file contents. Task titles are included only if a developer sets `"shareTaskTitles": true`. Tell the team what is collected and why before rolling it out.
+
+Policy settings in `~/.claude/tokenlens/config.json` on the lead's machine:
+
+```json
+{ "teamDir": "//fileserver/eng/tokenlens",
+  "team": { "monthlyAllowanceUsd": 250, "allowances": { "senior.dev@bistecglobal.com": 400 },
+            "heavyUtilization": 0.8, "limitHitsForHeavy": 3, "minEfficiency": 65, "maxAvoidable": 0.3, "minDelivery": 0.6 } }
+```
+
+Try it: `npm run demo:team` builds a six-person demo team and opens the report.
 
 ## Configuration
 
@@ -129,5 +156,6 @@ We analysed 13 token-saving tools before building this one ([docs/ANALYSIS.md](d
 - [Analysis of the 13 reference tools and why we built TokenLens this way](docs/ANALYSIS.md)
 - [Hack Day playbook: fixing an inefficient LLM workflow (caching, routing, trimming)](docs/HACKDAY-PLAYBOOK.md)
 - [Demo dashboard](docs/demo-dashboard.html)
+- [Demo team report](docs/demo-team-report.html)
 
 MIT licensed · © 2026 BISTEC Global

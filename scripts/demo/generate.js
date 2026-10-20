@@ -8,8 +8,18 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const out = path.resolve(process.argv[2] || path.join(__dirname, '..', '..', 'demo-data'));
-let seed = 42;
+const argv = process.argv.slice(2);
+const opt = (name, def) => {
+  const i = argv.indexOf('--' + name);
+  return i >= 0 ? argv[i + 1] : def;
+};
+const out = path.resolve(argv[0] && !argv[0].startsWith('--') ? argv[0] : path.join(__dirname, '..', '..', 'demo-data'));
+let seed = Number(opt('seed', 42));
+// --mix lean:3,qa-logs:1 weights the habits; --per-day 2-4 sets sessions per working day;
+// --limit-hits N adds plan-limit stops (heavy users).
+const MIX = opt('mix', null);
+const [PER_MIN, PER_MAX] = opt('per-day', '2-4').split('-').map(Number);
+let limitHitsLeft = Number(opt('limit-hits', 0));
 const rand = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
 const pick = (a) => a[Math.floor(rand() * a.length)];
 const uuid = () => crypto.createHash('md5').update(String(rand())).digest('hex').replace(/^(.{8})(.{4})(.{4})(.{4})(.{12}).*/, '$1-$2-$3-$4-$5');
@@ -117,6 +127,10 @@ function writeSession(project, arch, startTs) {
       ctx = 35000;
     }
   }
+  if (limitHitsLeft > 0 && rand() < 0.5) {
+    limitHitsLeft--;
+    lines.push({ ...base, type: 'assistant', timestamp: new Date(ts + 1000).toISOString(), message: { id: 'msg_limit_' + sessionId.slice(0, 8), model: '<synthetic>', content: [{ type: 'text', text: 'Claude usage limit reached. Your limit will reset at 6pm.' }], usage: usage(0, 0, 0, 0, false) } });
+  }
   fs.writeFileSync(path.join(dir, sessionId + '.jsonl'), lines.map((l) => JSON.stringify(l)).join('\n') + '\n');
 
   // Subagents
@@ -137,19 +151,26 @@ function writeSession(project, arch, startTs) {
   }
 }
 
+function weighted() {
+  const parts = MIX.split(',').map((x) => x.split(':')).map(([n, w]) => [ARCHETYPES.find((a) => a.name === n), Number(w || 1)]).filter(([a]) => a);
+  let r = rand() * parts.reduce((a, [, w]) => a + w, 0);
+  for (const [a, w] of parts) if ((r -= w) < 0) return a;
+  return parts[0][0];
+}
+
 fs.rmSync(path.join(out, 'projects'), { recursive: true, force: true });
 const now = Date.now();
 let count = 0;
 for (let d = 13; d >= 0; d--) {
   const day = new Date(now - d * 86400000);
   if (day.getDay() === 0 || day.getDay() === 6) continue;
-  const n = 2 + Math.floor(rand() * 3);
+  const n = PER_MIN + Math.floor(rand() * (PER_MAX - PER_MIN + 1));
   for (let i = 0; i < n; i++) {
     const startHour = pick([9, 10, 11, 13, 14, 15, 16, 18, 19, 20, 21]);
     const start = new Date(day);
     start.setHours(startHour, Math.floor(rand() * 60), 0, 0);
     if (start.getTime() > now - 3600000) continue;
-    const arch = d < 4 && rand() < 0.5 ? ARCHETYPES[0] : pick(ARCHETYPES);
+    const arch = MIX ? weighted() : d < 4 && rand() < 0.5 ? ARCHETYPES[0] : pick(ARCHETYPES);
     writeSession(pick(PROJECTS), arch, start.getTime());
     count++;
   }

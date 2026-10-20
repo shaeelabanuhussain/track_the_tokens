@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TokenLens Team Report</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f6f6f4; --surface-1: #fcfcfb; --surface-2: #f0efec; --border: #e2e1dc;
+  --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #7a7974;
+  --accent: #2a78d6; --peak: rgba(237,161,0,.16);
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300; --s7: #6250d6; --s8: #e34948;
+  --good: #008300; --warn: #b87800; --bad: #d03b3b;
+  --seq-0: #cde2fb; --seq-1: #86b6ef; --seq-2: #3987e5; --seq-3: #1c5cab; --seq-4: #0d366b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #111110; --surface-1: #1a1a19; --surface-2: #232321; --border: #33332f;
+    --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+    --accent: #3987e5; --peak: rgba(201,133,0,.18);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+    --good: #3fb950; --warn: #d6a01e; --bad: #f06a6a;
+    --seq-0: #104281; --seq-1: #1c5cab; --seq-2: #3987e5; --seq-3: #6da7ec; --seq-4: #b7d3f6;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #111110; --surface-1: #1a1a19; --surface-2: #232321; --border: #33332f;
+  --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+  --accent: #3987e5; --peak: rgba(201,133,0,.18);
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+  --good: #3fb950; --warn: #d6a01e; --bad: #f06a6a;
+  --seq-0: #104281; --seq-1: #1c5cab; --seq-2: #3987e5; --seq-3: #6da7ec; --seq-4: #b7d3f6;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text-primary); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header { padding: 20px 24px 8px; display: flex; flex-wrap: wrap; gap: 12px; align-items: baseline; justify-content: space-between; max-width: 1280px; margin: 0 auto; }
+h1 { font-size: 22px; margin: 0; letter-spacing: -.01em; }
+h1 span { color: var(--accent); }
+h2 { font-size: 15px; margin: 0 0 12px; }
+.sub { color: var(--text-secondary); font-size: 13px; }
+main { max-width: 1280px; margin: 0 auto; padding: 8px 24px 40px; display: grid; gap: 16px; }
+.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; min-width: 0; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.kpi .label { color: var(--text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+.kpi .value { font-size: 26px; font-weight: 650; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.kpi .note { color: var(--text-muted); font-size: 12px; }
+.grid2 { display: grid; grid-template-columns: 3fr 2fr; gap: 16px; }
+@media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } header, main { padding-left: 16px; padding-right: 16px; } }
+.banner { border-radius: 12px; padding: 12px 16px; border: 1px solid var(--border); background: var(--surface-2); display: flex; gap: 10px; align-items: center; }
+.banner b { white-space: nowrap; }
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+svg text { fill: var(--text-secondary); font-size: 11px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.tip { position: fixed; pointer-events: none; background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.15); display: none; z-index: 10; max-width: 280px; }
+.leak { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 10px 0; border-top: 1px solid var(--border); }
+.leak:first-of-type { border-top: 0; }
+.leak .t { font-weight: 600; }
+.leak .c { font-variant-numeric: tabular-nums; font-weight: 650; }
+.leak .f { grid-column: 1 / -1; color: var(--text-secondary); font-size: 13px; }
+.leak .bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+.leak .bar span { display: block; height: 100%; background: var(--s2); border-radius: 3px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 8px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--text-secondary); font-weight: 600; font-size: 12px; cursor: pointer; user-select: none; white-space: nowrap; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tr.row { cursor: pointer; }
+tr.row:hover td { background: var(--surface-2); }
+tr.detail td { background: var(--surface-2); color: var(--text-secondary); }
+.scroll { overflow-x: auto; }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid currentColor; }
+.good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+.task { color: var(--text-secondary); max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+input[type=search] { background: var(--surface-2); border: 1px solid var(--border); color: var(--text-primary); border-radius: 8px; padding: 6px 10px; min-width: 220px; }
+.toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.tips { columns: 2 320px; column-gap: 24px; padding-left: 18px; margin: 0; }
+.tips li { margin: 0 0 8px; break-inside: avoid; }
+.tips b { color: var(--text-secondary); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+.whatif div { display: flex; justify-content: space-between; padding: 6px 0; border-top: 1px solid var(--border); }
+.whatif div:first-child { border-top: 0; }
+.whatif .total { font-weight: 700; }
+button.theme { background: var(--surface-2); color: var(--text-primary); border: 1px solid var(--border); border-radius: 8px; padding: 4px 10px; cursor: pointer; }
+details summary { cursor: pointer; color: var(--text-secondary); font-size: 12px; margin-top: 8px; }
+.empty { color: var(--text-muted); padding: 24px; text-align: center; }
+</style>
+<style>
+.verdict { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid currentColor; white-space: nowrap; }
+.v-eligible { color: var(--good); } .v-coach { color: var(--warn); } .v-review { color: var(--bad); } .v-within { color: var(--text-muted); }
+.stack { display: flex; height: 14px; border-radius: 4px; overflow: hidden; gap: 2px; min-width: 160px; }
+.stack span { display: block; height: 100%; }
+.reasons { color: var(--text-secondary); font-size: 12px; margin-top: 4px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.dev h3 { margin: 0 0 4px; font-size: 15px; }
+.dev .big { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.meter { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; margin: 6px 0 2px; }
+.meter span { display: block; height: 100%; border-radius: 4px; }
+.policy li { margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<header>
+  <div><h1>◆ Token<span>Lens</span> · Team</h1><div class="sub" id="range"></div></div>
+  <div class="sub">Who uses tokens, for what, and who needs more &nbsp; <button class="theme" id="theme" aria-label="Toggle dark mode">◐</button></div>
+</header>
+<main>
+  <section class="kpis" id="kpis"></section>
+  <section class="card"><h2>Developers</h2><div class="cards" id="devs"></div></section>
+  <section class="card"><h2>Spend by purpose</h2><div class="legend" id="legend"></div><div class="scroll"><table id="purposeTable"></table></div></section>
+  <section class="card"><h2>Extra-token eligibility policy</h2><ul class="policy" id="policy"></ul>
+    <p class="sub">Shared summaries contain purpose categories and numbers only. Prompt text is never shared unless a developer turns on <code>shareTaskTitles</code>.</p></section>
+</main>
+<div class="tip" id="tip" role="tooltip"></div>
+<script>
+const D = {"days":30,"policy":{"monthlyAllowanceUsd":250,"heavyUtilization":0.8,"limitHitsForHeavy":3,"minEfficiency":65,"maxAvoidable":0.3,"minDelivery":0.6,"allowances":{}},"verdicts":{"eligible":{"label":"Eligible for more tokens","icon":"✅"},"coach":{"label":"Coach first, then reassess","icon":"🟡"},"review":{"label":"Review purpose of use","icon":"🔍"},"within":{"label":"Within allowance","icon":"⚪"}},"purposes":["Feature development","Bug fixing","Testing & QA","Code review","Refactoring","Docs & analysis","DevOps & build","Learning & exploration","General Q&A"],"generatedAt":1792524080192,"rows":[{"developer":{"name":"Dev A","email":"dev.a@example.com","role":"Senior developer"},"sessions":83,"activeDays":9,"spend":40.20159999999999,"projected":95.77419973685255,"allowance":250,"utilization":0.3830967989474102,"efficiency":95,"avoidable":2.0100000000000002,"avoidableShare":0.04999801002945158,"cacheHitRate":0.9527579901106549,"deliveryShare":1.0000000000000002,"byPurpose":{"Bug fixing":12.374699999999999,"Feature development":10.717299999999998,"Refactoring":6.6362,"Testing & QA":10.4734},"limitHits":4,"edits":367,"topLeak":"context-bloat","verdict":"eligible","reasons":["Heavy use (38% of allowance, 4 plan-limit stops)","efficient (score 95, 5% avoidable)","100% on delivery work"],"recommendedAllowance":400},{"developer":{"name":"Dev B","email":"dev.b@example.com","role":"Developer"},"sessions":26,"activeDays":9,"spend":342.0494999999999,"projected":810.962281176608,"allowance":250,"utilization":3.2438491247064323,"efficiency":43,"avoidable":191.8297,"avoidableShare":0.5608243836052971,"cacheHitRate":0.9569310442952552,"deliveryShare":1.0000000000000002,"byPurpose":{"Bug fixing":174.2214,"Feature development":6.3971,"Testing & QA":14.101600000000001,"Refactoring":139.062,"Docs & analysis":8.2674},"limitHits":3,"edits":546,"topLeak":"context-bloat","verdict":"coach","reasons":["Heavy use, but 56% of spend is avoidable (score 43)","fix first: clear or compact between tasks","would free ~$455/month"],"recommendedAllowance":250},{"developer":{"name":"Dev D","email":"dev.d@example.com","role":"Developer"},"sessions":74,"activeDays":9,"spend":248.28719999999993,"projected":588.6248745700766,"allowance":250,"utilization":2.3544994982803065,"efficiency":42,"avoidable":136.5353,"avoidableShare":0.5499087347233367,"cacheHitRate":0.9432595481334599,"deliveryShare":0.03693343837298098,"byPurpose":{"Docs & analysis":9.1701,"Learning & exploration":239.1170999999999},"limitHits":2,"edits":153,"topLeak":"cache-expired","verdict":"review","reasons":["Heavy use, but only 4% on delivery work","largest share: Learning & exploration (96%)"],"recommendedAllowance":250},{"developer":{"name":"Dev E","email":"dev.e@example.com","role":"Developer"},"sessions":14,"activeDays":9,"spend":6.6517,"projected":16.112717551698616,"allowance":250,"utilization":0.06445087020679446,"efficiency":94,"avoidable":0.4203,"avoidableShare":0.0631868544883263,"cacheHitRate":0.9524583125477785,"deliveryShare":1,"byPurpose":{"Testing & QA":1.536,"Bug fixing":4.139200000000001,"Refactoring":0.6178,"Feature development":0.3587},"limitHits":0,"edits":53,"topLeak":"context-bloat","verdict":"within","reasons":["Uses 6% of the $250/month allowance"],"recommendedAllowance":250},{"developer":{"name":"QA C","email":"qa.c@example.com","role":"QA engineer"},"sessions":23,"activeDays":9,"spend":57.9426,"projected":140.0535776073595,"allowance":250,"utilization":0.560214310429438,"efficiency":28,"avoidable":32.9215,"avoidableShare":0.5681743656653309,"cacheHitRate":0.9147484242063161,"deliveryShare":1,"byPurpose":{"Testing & QA":55.926,"Bug fixing":0.6850999999999999,"Refactoring":0.8805000000000001,"Feature development":0.451},"limitHits":0,"edits":116,"topLeak":"cache-expired","verdict":"within","reasons":["Uses 56% of the $250/month allowance","but 57% is avoidable (hand off before breaks instead of resuming cold sessions): coaching would save ~$80/month"],"recommendedAllowance":250},{"developer":{"name":"QA F","email":"qa.f@example.com","role":"QA lead"},"sessions":59,"activeDays":9,"spend":40.235800000000005,"projected":96.66644379292414,"allowance":250,"utilization":0.3866657751716966,"efficiency":78,"avoidable":7.690300000000001,"avoidableShare":0.19113078402815403,"cacheHitRate":0.9476438832299658,"deliveryShare":0.9999999999999998,"byPurpose":{"Testing & QA":16.824999999999996,"Bug fixing":8.775400000000001,"Feature development":8.5184,"Refactoring":6.117000000000001},"limitHits":3,"edits":300,"topLeak":"context-bloat","verdict":"eligible","reasons":["Heavy use (39% of allowance, 3 plan-limit stops)","efficient (score 78, 19% avoidable)","100% on delivery work"],"recommendedAllowance":400}]};
+const $ = (id) => document.getElementById(id);
+const usd = (n) => '$' + (n >= 100 ? n.toFixed(0) : n.toFixed(2));
+const pct = (x) => Math.round(x * 100) + '%';
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const tip = $('tip');
+function showTip(e, html) { tip.innerHTML = html; tip.style.display = 'block'; tip.style.left = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8) + 'px'; tip.style.top = (e.clientY + 14) + 'px'; }
+$('theme').onclick = () => { const r = document.documentElement; const dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; r.dataset.theme = dark ? 'light' : 'dark'; };
+
+const R = D.rows;
+const total = R.reduce((a, r) => a + r.spend, 0);
+$('range').textContent = 'Last ' + D.days + ' days · ' + R.length + ' developers · generated ' + new Date(D.generatedAt).toLocaleString();
+const avoid = R.reduce((a, r) => a + r.avoidable, 0);
+const count = (v) => R.filter((r) => r.verdict === v).length;
+$('kpis').innerHTML = [
+  ['Team spend', usd(total), 'last ' + D.days + ' days'],
+  ['Developers', R.length, R.reduce((a, r) => a + r.sessions, 0) + ' sessions'],
+  ['Eligible for more', count('eligible'), 'heavy, efficient, delivery-focused'],
+  ['Coach first', count('coach'), 'heavy but wasteful'],
+  ['Review', count('review'), 'heavy, little delivery work'],
+  ['Avoidable', usd(avoid), total ? pct(avoid / total) + ' of team spend' : ''],
+].map(([l, v, n]) => '<div class="card kpi"><div class="label">' + l + '</div><div class="value">' + v + '</div><div class="note">' + esc(n) + '</div></div>').join('');
+
+// fixed purpose -> color order; General Q&A folds to gray
+const color = (p) => { const i = D.purposes.indexOf(p); return i >= 0 && i < 8 ? 'var(--s' + (i + 1) + ')' : 'var(--text-muted)'; };
+const order = { eligible: 0, coach: 1, review: 2, within: 3 };
+const sorted = R.slice().sort((a, b) => order[a.verdict] - order[b.verdict] || b.spend - a.spend);
+function stack(r) {
+  return '<div class="stack" role="img" aria-label="Spend by purpose">' + Object.entries(r.byPurpose).sort((a, b) => D.purposes.indexOf(a[0]) - D.purposes.indexOf(b[0])).map(([p, c]) => '<span data-tip="' + esc(p + ': ' + usd(c) + ' (' + pct(c / (r.spend || 1)) + ')') + '" style="width:' + (100 * c / (r.spend || 1)) + '%;background:' + color(p) + '"></span>').join('') + '</div>';
+}
+$('devs').innerHTML = sorted.map((r) => {
+  const v = D.verdicts[r.verdict];
+  const u = Math.min(1, r.utilization);
+  const mcol = r.utilization >= 1 ? 'var(--bad)' : r.utilization >= 0.8 ? 'var(--warn)' : 'var(--good)';
+  return '<div class="card dev"><h3>' + esc(r.developer.name) + (r.developer.role ? ' <span class="sub">· ' + esc(r.developer.role) + '</span>' : '') + '</h3>'
+    + '<span class="verdict v-' + r.verdict + '">' + v.icon + ' ' + esc(v.label) + '</span>'
+    + '<div style="display:flex;justify-content:space-between;margin-top:10px"><div><div class="big">' + usd(r.projected) + '</div><div class="sub">per month (est.)</div></div><div style="text-align:right"><div class="big">' + r.efficiency + '</div><div class="sub">efficiency</div></div></div>'
+    + '<div class="meter"><span style="width:' + (u * 100) + '%;background:' + mcol + '"></span></div><div class="sub">' + pct(r.utilization) + ' of $' + r.allowance + ' allowance' + (r.limitHits ? ' · ' + r.limitHits + ' plan-limit stops' : '') + '</div>'
+    + '<div style="margin-top:10px">' + stack(r) + '</div>'
+    + '<div class="sub" style="margin-top:4px">' + pct(r.deliveryShare) + ' delivery work · ' + pct(r.avoidableShare) + ' avoidable · cache ' + pct(r.cacheHitRate) + ' · ' + r.sessions + ' sessions</div>'
+    + (r.verdict === 'eligible' ? '<p><b class="v-eligible">→ Raise allowance to $' + r.recommendedAllowance + '/month</b></p>' : '')
+    + '<div class="reasons">' + esc(r.reasons.join('; ')) + '.</div></div>';
+}).join('');
+document.querySelectorAll('[data-tip]').forEach((el) => { el.onmousemove = (e) => showTip(e, el.dataset.tip); el.onmouseleave = () => (tip.style.display = 'none'); });
+
+const used = D.purposes.filter((p) => R.some((r) => r.byPurpose[p]));
+$('legend').innerHTML = used.map((p) => '<span><i style="background:' + color(p) + '"></i>' + esc(p) + '</span>').join('');
+$('purposeTable').innerHTML = '<tr><th>Developer</th>' + used.map((p) => '<th class="num">' + esc(p) + '</th>').join('') + '<th class="num">Total</th></tr>'
+  + sorted.map((r) => '<tr><td>' + esc(r.developer.name) + '</td>' + used.map((p) => '<td class="num">' + (r.byPurpose[p] ? usd(r.byPurpose[p]) : '–') + '</td>').join('') + '<td class="num"><b>' + usd(r.spend) + '</b></td></tr>').join('')
+  + '<tr><td><b>Team</b></td>' + used.map((p) => '<td class="num"><b>' + usd(R.reduce((a, r) => a + (r.byPurpose[p] || 0), 0)) + '</b></td>').join('') + '<td class="num"><b>' + usd(total) + '</b></td></tr>';
+
+const P = D.policy;
+$('policy').innerHTML = [
+  '<b>Eligible for more tokens</b>: heavy use (≥ ' + pct(P.heavyUtilization) + ' of allowance, or ≥ ' + P.limitHitsForHeavy + ' plan-limit stops) <b>and</b> efficient (score ≥ ' + P.minEfficiency + ', ≤ ' + pct(P.maxAvoidable) + ' avoidable) <b>and</b> ≥ ' + pct(P.minDelivery) + ' of spend on delivery work. Suggested new allowance: 125% of projected use, at least 1.5× the current one.',
+  '<b>Coach first</b>: heavy and delivery-focused but wasteful. Fixing the top leak frees allowance before buying more.',
+  '<b>Review purpose</b>: heavy use with little delivery work (mostly learning or general Q&amp;A). Talk about it; it may still be fine.',
+  '<b>Within allowance</b>: no change needed. Default allowance $' + P.monthlyAllowanceUsd + '/month per developer (configurable per person).',
+].map((t) => '<li>' + t + '</li>').join('');
+</script>
+</body>
+</html>

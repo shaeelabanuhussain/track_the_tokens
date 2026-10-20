@@ -43,13 +43,7 @@ function render(sessions, { days, timing, leakNames, tips }) {
   return TEMPLATE.replace('__DATA__', json);
 }
 
-const TEMPLATE = `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TokenLens Dashboard</title>
-<style>
+const STYLE = `<style>
 :root {
   color-scheme: light;
   --bg: #f6f6f4; --surface-1: #fcfcfb; --surface-2: #f0efec; --border: #e2e1dc;
@@ -130,7 +124,15 @@ input[type=search] { background: var(--surface-2); border: 1px solid var(--borde
 button.theme { background: var(--surface-2); color: var(--text-primary); border: 1px solid var(--border); border-radius: 8px; padding: 4px 10px; cursor: pointer; }
 details summary { cursor: pointer; color: var(--text-secondary); font-size: 12px; margin-top: 8px; }
 .empty { color: var(--text-muted); padding: 24px; text-align: center; }
-</style>
+</style>`;
+
+const TEMPLATE = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TokenLens Dashboard</title>
+${STYLE}
 </head>
 <body>
 <header>
@@ -303,4 +305,4 @@ $('tips').innerHTML = D.tips.map((t) => { const head = t.area !== area ? '<b>' +
 </html>
 `;
 
-module.exports = { render };
+module.exports = { render, STYLE };

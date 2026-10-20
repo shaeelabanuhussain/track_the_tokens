@@ -102,6 +102,8 @@ function parseTranscript(file, { includeSubagents = true } = {}) {
   let cwd = null;
   let gitBranch = null;
   let compactions = 0;
+  let limitHits = 0;
+  const prompts = [];
 
   for (const e of entries) {
     if (e.cwd && !cwd) cwd = e.cwd;
@@ -115,6 +117,7 @@ function parseTranscript(file, { includeSubagents = true } = {}) {
         if (!e.isMeta && !c.startsWith('<command-') && !c.startsWith('<local-command')) {
           userPrompts++;
           if (!firstPrompt) firstPrompt = c;
+          if (prompts.length < 5) prompts.push(c.slice(0, 300));
         }
       } else if (Array.isArray(c)) {
         for (const block of c) {
@@ -155,7 +158,12 @@ function parseTranscript(file, { includeSubagents = true } = {}) {
           }
         }
       }
-      if (m.model === '<synthetic>') continue;
+      if (m.model === '<synthetic>') {
+        // Claude Code records plan/rate-limit stops as synthetic assistant messages.
+        const text = JSON.stringify(m.content || '');
+        if (/usage limit|rate limit|limit reached|limit will reset/i.test(text)) limitHits++;
+        continue;
+      }
       turns.set(id, turn);
     }
   }
@@ -193,6 +201,9 @@ function parseTranscript(file, { includeSubagents = true } = {}) {
   session.gitBranch = gitBranch;
   session.firstPrompt = firstPrompt ? firstPrompt.replace(/\s+/g, ' ').slice(0, 120) : '';
   session.userPrompts = userPrompts;
+  session.prompts = prompts;
+  session.limitHits = limitHits;
+  session.edits = [...toolUses.values()].filter((u) => /^(Edit|Write|MultiEdit|NotebookEdit)$/.test(u.name)).length;
   session.compactions = compactions;
   session.turns = list;
   session.toolCalls = toolStats;

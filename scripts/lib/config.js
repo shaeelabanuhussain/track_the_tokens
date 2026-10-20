@@ -13,6 +13,9 @@ const DEFAULTS = {
   pdfAutoConvert: true, // convert PDFs to Markdown before Claude reads them
   sessionStartBanner: true,
   timezone: null, // defaults to the system timezone
+  teamDir: null, // shared folder for /tokenlens:share and /tokenlens:team
+  shareTaskTitles: false, // include the first 80 chars of each task when sharing
+  developer: null, // { "name", "email", "role" }; defaults to git config
 };
 
 function dataDir() {

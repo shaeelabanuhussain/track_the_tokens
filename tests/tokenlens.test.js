@@ -137,3 +137,38 @@ test('demo data, FOCUS export and dashboard', () => {
   assert.ok(!/__DATA__/.test(html));
   assert.match(run(['diagnose', '--days', '30']), /avoidable/);
 });
+
+test('purpose: tasks are classified into delivery and non-delivery categories', () => {
+  const { classifyText } = require('../scripts/lib/purpose');
+  assert.strictEqual(classifyText('Fix flaky date test in payroll module'), 'Bug fixing');
+  assert.strictEqual(classifyText('Write unit tests for refund calculator'), 'Testing & QA');
+  assert.strictEqual(classifyText('Triage the Playwright failures from last night'), 'Testing & QA');
+  assert.strictEqual(classifyText('Add validation to leave request form'), 'Feature development');
+  assert.strictEqual(classifyText('Explain these git commands'), 'Learning & exploration');
+  assert.strictEqual(classifyText('Help me word the release notes'), 'Docs & analysis');
+});
+
+test('team: share hides prompts, and eligibility follows the policy', () => {
+  const team = require('../scripts/lib/team');
+  const now = Date.now();
+  const mk = (name, n, cost, score, avoidable, purpose, limitHits = 0) => ({
+    tokenlensShare: 1,
+    developer: { name, email: name + '@x' },
+    sessions: Array.from({ length: n }, (_, i) => ({ start: now - (i % 28) * 86400000 - 3600000, end: now - (i % 28) * 86400000, cost, score, avoidable, purpose, tokens: 1e6, output: 1e4, cacheHitRate: 0.9, limitHits: i < limitHits ? 1 : 0 })),
+  });
+  const pol = { ...team.POLICY_DEFAULTS, allowances: {} };
+  assert.strictEqual(team.assess(mk('lean-heavy', 60, 4, 90, 0.2, 'Feature development'), { days: 30 }, pol).verdict, 'eligible');
+  assert.strictEqual(team.assess(mk('wasteful', 60, 4, 40, 2, 'Bug fixing'), { days: 30 }, pol).verdict, 'coach');
+  assert.strictEqual(team.assess(mk('explorer', 60, 4, 90, 0.2, 'Learning & exploration'), { days: 30 }, pol).verdict, 'review');
+  assert.strictEqual(team.assess(mk('light', 10, 1, 90, 0, 'Bug fixing'), { days: 30 }, pol).verdict, 'within');
+  assert.strictEqual(team.assess(mk('limited', 10, 1, 90, 0, 'Bug fixing', 4), { days: 30 }, pol).verdict, 'eligible');
+
+  const dir = path.join(home, 'team');
+  const outp = run(['share', '--dir', dir]);
+  assert.match(outp, /Not shared: prompt text/);
+  const file = fs.readdirSync(dir).find((f) => f.endsWith('.json'));
+  const shared = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
+  assert.ok(shared.sessions.length > 0);
+  assert.ok(shared.sessions.every((s) => s.task === undefined && s.purpose));
+  assert.match(run(['team', '--dir', dir]), /TokenLens team report/);
+});

@@ -8,8 +8,9 @@ const path = require('path');
 const { listSessionFiles, parseTranscript } = require('./transcripts');
 const { diagnose, score } = require('./insights');
 const { dataDir } = require('./config');
+const { classifyPurpose } = require('./purpose');
 
-const CACHE_VERSION = 3;
+const CACHE_VERSION = 4;
 
 function cachePath() {
   return path.join(dataDir(), 'cache.json');
@@ -95,6 +96,9 @@ function summarizeSession(file, project) {
     peakContext: s.peakContext,
     lastContext: s.lastContext,
     compactions: s.compactions,
+    purpose: classifyPurpose(s),
+    edits: s.edits,
+    limitHits: s.limitHits,
     topTools: topTools(s.toolCalls),
     findings: findings.map(({ id, title, cost, evidence, fix }) => ({ id, title, cost, evidence, fix })),
     score: score(s, findings),
