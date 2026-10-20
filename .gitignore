@@ -3,3 +3,4 @@ node_modules/
 *.tokenlens.bak
 .DS_Store
 __pycache__/
+.specclaw/
